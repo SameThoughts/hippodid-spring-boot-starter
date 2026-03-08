@@ -20,11 +20,15 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
 
       - name: Build and test
-        run: mvn clean verify -Plocal -B
+        run: mvn clean verify -B
 
       - name: Publish to GitHub Packages
         run: mvn deploy -Pgithub -B
         env:
+          GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
