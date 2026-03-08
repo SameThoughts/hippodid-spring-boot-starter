@@ -9,20 +9,22 @@ Add persistent, searchable memory to your AI agents and Spring applications in t
 
 ## Installation
 
+> **Publishing status:** This artifact is not yet published to Maven Central. For now, clone and `mvn install -Plocal` to use it locally. Maven Central publishing is planned — see [TODO](#todo).
+
 ### Maven
 
 ```xml
 <dependency>
     <groupId>dev.hippodid</groupId>
     <artifactId>hippodid-spring-boot-starter</artifactId>
-    <version>0.1.0</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 
 ### Gradle
 
 ```groovy
-implementation 'dev.hippodid:hippodid-spring-boot-starter:0.1.0'
+implementation 'dev.hippodid:hippodid-spring-boot-starter:1.0.0'
 ```
 
 ## Configuration
@@ -245,11 +247,17 @@ class MyServiceTest { ... }
 
 ## License
 
-Apache 2.0 — see [LICENSE](../LICENSE).
+Apache 2.0 — see [LICENSE](LICENSE).
+
+## TODO
+
+- [ ] Publish to Maven Central (GPG signing + Sonatype Central Portal already configured in pom.xml)
+- [ ] Set up GitHub Actions CI for automated testing on PRs
+- [ ] Add GitHub Packages publishing as interim distribution channel
 
 ## Links
 
 - [Full documentation](https://docs.hippodid.com/spring-boot-starter)
 - [API reference](https://docs.hippodid.com/api-reference)
 - [Tiers & limits](https://docs.hippodid.com/tiers)
-- [GitHub](https://github.com/hippodid/hippodid)
+- [GitHub](https://github.com/SameThoughts/hippodid-spring-boot-starter)
