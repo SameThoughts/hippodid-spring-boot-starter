@@ -1,6 +1,6 @@
 # hippodid-spring-boot-starter
 
-[![Maven Central](https://img.shields.io/maven-central/v/dev.hippodid/hippodid-spring-boot-starter)](https://central.sonatype.com/artifact/dev.hippodid/hippodid-spring-boot-starter)
+[![CI](https://github.com/SameThoughts/hippodid-spring-boot-starter/actions/workflows/ci.yml/badge.svg)](https://github.com/SameThoughts/hippodid-spring-boot-starter/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 Spring Boot auto-configuration for the [HippoDid](https://hippodid.com) AI character memory API.
@@ -9,11 +9,20 @@ Add persistent, searchable memory to your AI agents and Spring applications in t
 
 ## Installation
 
-> **Publishing status:** This artifact is not yet published to Maven Central. For now, clone and `mvn install -Plocal` to use it locally. Maven Central publishing is planned — see [TODO](#todo).
+Available via [GitHub Packages](https://github.com/SameThoughts/hippodid-spring-boot-starter/packages). Maven Central publishing is planned.
 
 ### Maven
 
+Add the GitHub Packages repository and dependency to your `pom.xml`:
+
 ```xml
+<repositories>
+    <repository>
+        <id>github</id>
+        <url>https://maven.pkg.github.com/SameThoughts/hippodid-spring-boot-starter</url>
+    </repository>
+</repositories>
+
 <dependency>
     <groupId>dev.hippodid</groupId>
     <artifactId>hippodid-spring-boot-starter</artifactId>
@@ -21,9 +30,29 @@ Add persistent, searchable memory to your AI agents and Spring applications in t
 </dependency>
 ```
 
+GitHub Packages requires authentication. Add to your `~/.m2/settings.xml`:
+
+```xml
+<server>
+    <id>github</id>
+    <username>YOUR_GITHUB_USERNAME</username>
+    <password>YOUR_GITHUB_TOKEN</password> <!-- needs read:packages scope -->
+</server>
+```
+
 ### Gradle
 
 ```groovy
+repositories {
+    maven {
+        url = uri("https://maven.pkg.github.com/SameThoughts/hippodid-spring-boot-starter")
+        credentials {
+            username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
+            password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
+}
+
 implementation 'dev.hippodid:hippodid-spring-boot-starter:1.0.0'
 ```
 
@@ -252,8 +281,6 @@ Apache 2.0 — see [LICENSE](LICENSE).
 ## TODO
 
 - [ ] Publish to Maven Central (GPG signing + Sonatype Central Portal already configured in pom.xml)
-- [ ] Set up GitHub Actions CI for automated testing on PRs
-- [ ] Add GitHub Packages publishing as interim distribution channel
 
 ## Links
 
