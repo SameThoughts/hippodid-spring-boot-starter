@@ -163,6 +163,19 @@ public class HippoDidClient {
         }
     }
 
+    /**
+     * Returns tenant-level AI provider configuration operations.
+     *
+     * <pre>{@code
+     * AiConfig config = hippodid.aiConfig().get();
+     * hippodid.aiConfig().save(request);
+     * hippodid.aiConfig().delete();
+     * }</pre>
+     */
+    public AiConfigOperations aiConfig() {
+        return new AiConfigOperations(webClient);
+    }
+
     /** The base URL configured for this client. */
     public String baseUrl() {
         return properties.getBaseUrl();

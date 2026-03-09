@@ -65,6 +65,33 @@ public class CharacterHandle {
     }
 
     /**
+     * Returns file sync operations for this character.
+     *
+     * <p>Usage:
+     * <pre>{@code
+     * hippodid.characters("id").sync().upload("MEMORY.md", content);
+     * hippodid.characters("id").sync().list();
+     * hippodid.characters("id").sync().download("MEMORY.md");
+     * }</pre>
+     */
+    public SyncOperations sync() {
+        return new SyncOperations(characterId, webClient);
+    }
+
+    /**
+     * Returns import operations for this character.
+     *
+     * <p>Usage:
+     * <pre>{@code
+     * ImportJob job = hippodid.characters("id").imports().start("doc.md", content, "auto");
+     * hippodid.characters("id").imports().commit(job.importId());
+     * }</pre>
+     */
+    public ImportOperations imports() {
+        return new ImportOperations(characterId, webClient);
+    }
+
+    /**
      * Performs a semantic search over this character's memories.
      *
      * <p>Usage:
@@ -146,6 +173,30 @@ public class CharacterHandle {
             throw new HippoDidException(e.getStatusCode().value(), e.getStatusText());
         } catch (IOException e) {
             throw new java.io.UncheckedIOException("Failed to write export to " + outputPath, e);
+        }
+    }
+
+    /**
+     * Exports all memories for this character as a string.
+     *
+     * <p>Unlike {@link #export(ExportFormat, java.nio.file.Path)} which writes to a file,
+     * this returns the content directly — useful for MCP server integration.
+     *
+     * @param format the export format (MARKDOWN or JSON)
+     * @return the exported content as a string
+     * @throws HippoDidException if the request fails
+     */
+    public String exportAsString(ExportFormat format) {
+        try {
+            return webClient.get()
+                    .uri("/v1/characters/{id}/export?format={format}", characterId,
+                            format.name().toLowerCase())
+                    .accept(org.springframework.http.MediaType.parseMediaType(format.mediaType()))
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+        } catch (WebClientResponseException e) {
+            throw new HippoDidException(e.getStatusCode().value(), e.getStatusText());
         }
     }
 
