@@ -141,7 +141,7 @@ class HippoDidClientTest {
     @Test
     void addMemory_sendsCorrectRequest() throws Exception {
         String body = """
-                {
+                [{
                     "id": "m1m1m1m1-0000-0000-0000-000000000001",
                     "characterId": "c1c1c1c1-0000-0000-0000-000000000001",
                     "content": "User prefers dark mode",
@@ -150,17 +150,19 @@ class HippoDidClientTest {
                     "state": "ACTIVE",
                     "createdAt": "2024-01-01T00:00:00Z",
                     "updatedAt": "2024-01-01T00:00:00Z"
-                }
+                }]
                 """;
         mockServer.enqueue(new MockResponse()
                 .setResponseCode(201)
                 .setBody(body)
                 .addHeader("Content-Type", "application/json"));
 
-        MemoryInfo mem = client.characters("c1c1c1c1-0000-0000-0000-000000000001")
+        List<MemoryInfo> memories = client.characters("c1c1c1c1-0000-0000-0000-000000000001")
                 .memories()
                 .add("User prefers dark mode");
 
+        assertThat(memories).hasSize(1);
+        MemoryInfo mem = memories.get(0);
         assertThat(mem.content()).isEqualTo("User prefers dark mode");
         assertThat(mem.category()).isEqualTo("preferences");
         assertThat(mem.salience()).isEqualTo(0.75);

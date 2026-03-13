@@ -7,6 +7,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -40,14 +41,14 @@ public class MemoryOperations {
     /**
      * Add a memory using AI extraction (AUDN pipeline).
      *
-     * <p>Requires Starter tier or above. The content is analyzed and structured
-     * memories are extracted and stored automatically.
+     * <p>The content is analyzed and structured memories are extracted and stored
+     * automatically. The API may extract multiple memories from a single input.
      *
      * @param content unstructured text to extract memories from (max 2000 chars)
-     * @return the extracted and stored memory
+     * @return the list of extracted and stored memories
      * @throws HippoDidException if the request fails (e.g., tier limit exceeded)
      */
-    public MemoryInfo add(String content) {
+    public List<MemoryInfo> add(String content) {
         return add(content, "manual");
     }
 
@@ -57,15 +58,30 @@ public class MemoryOperations {
      * @param content    unstructured text to extract memories from (max 2000 chars)
      * @param sourceType source hint: {@code manual}, {@code email}, {@code slack},
      *                   {@code meeting}, {@code file}, {@code direct}, {@code import}
-     * @return the extracted and stored memory
+     * @return the list of extracted and stored memories
      * @throws HippoDidException if the request fails
      */
-    public MemoryInfo add(String content, String sourceType) {
+    public List<MemoryInfo> add(String content, String sourceType) {
         Map<String, Object> body = new HashMap<>();
         body.put("content", content);
         body.put("sourceType", sourceType);
-        return post("/v1/characters/{id}/memories", body, MemoryResponse.class)
-                .toMemoryInfo();
+        try {
+            List<MemoryResponse> responses = webClient.post()
+                    .uri("/v1/characters/{id}/memories", characterId)
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToFlux(MemoryResponse.class)
+                    .collectList()
+                    .block();
+            if (responses == null) {
+                return List.of();
+            }
+            return responses.stream()
+                    .map(MemoryResponse::toMemoryInfo)
+                    .toList();
+        } catch (WebClientResponseException e) {
+            throw new HippoDidException(e.getStatusCode().value(), e.getStatusText());
+        }
     }
 
     /**

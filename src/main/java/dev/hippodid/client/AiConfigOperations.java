@@ -121,6 +121,33 @@ public class AiConfigOperations {
     }
 
     /**
+     * Tests the currently saved AI provider configuration.
+     *
+     * @return test results for completion (and optionally embedding) providers
+     * @throws HippoDidException if the request fails or no config is saved
+     */
+    public AiTestResult testSaved() {
+        try {
+            AiTestResponse response = webClient.post()
+                    .uri("/v1/ai-config/test")
+                    .bodyValue(Map.of())
+                    .retrieve()
+                    .bodyToMono(AiTestResponse.class)
+                    .block();
+            if (response == null) {
+                throw new HippoDidException(500, "EmptyResponse", "AI config test returned no content");
+            }
+            return new AiTestResult(
+                    response.completionStatus() != null ? response.completionStatus() : "unknown",
+                    Optional.ofNullable(response.completionMessage()),
+                    Optional.ofNullable(response.embeddingStatus()),
+                    Optional.ofNullable(response.embeddingMessage()));
+        } catch (WebClientResponseException e) {
+            throw new HippoDidException(e.getStatusCode().value(), e.getStatusText());
+        }
+    }
+
+    /**
      * Deletes the AI provider configuration for the tenant.
      *
      * @throws HippoDidException if the request fails
