@@ -1,6 +1,7 @@
 package dev.hippodid.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import dev.hippodid.client.model.ImportDocumentResult;
 import dev.hippodid.client.model.SyncStatus;
 import dev.hippodid.client.model.SyncedFile;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -78,6 +79,44 @@ public class SyncOperations {
                     .bodyToMono(SyncResponse.class)
                     .block();
             return toSyncedFile(response);
+        } catch (WebClientResponseException e) {
+            throw new HippoDidException(e.getStatusCode().value(), e.getStatusText());
+        }
+    }
+
+    /**
+     * Imports a document and extracts memories synchronously (available on all tiers).
+     *
+     * <p>Free and Starter tiers support up to 50 KB per file; Developer and Business
+     * have no size limit. For AI-powered async import with staging review, use
+     * {@link ImportOperations} instead (Developer+ only).
+     *
+     * @param fileName document filename (e.g. "MEMORY.md", "2024-01-15.md")
+     * @param content  full UTF-8 document content
+     * @param format   import format: "auto", "memory_md", "claude_md", "daily_log", "plain_text"
+     * @return import result with counts of parsed, added, skipped, and filtered memories
+     * @throws HippoDidException if the request fails
+     */
+    public ImportDocumentResult importDocument(String fileName, String content, String format) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("fileName", fileName);
+        body.put("fileContent", content);
+        body.put("format", format != null ? format : "auto");
+        try {
+            ImportDocumentResponse response = webClient.post()
+                    .uri("/v1/characters/{id}/sync/import", characterId)
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(ImportDocumentResponse.class)
+                    .block();
+            if (response == null) {
+                throw new HippoDidException(500, "EmptyResponse", "Import endpoint returned no content");
+            }
+            return new ImportDocumentResult(
+                    response.totalParsed(),
+                    response.memoriesAdded(),
+                    response.duplicatesSkipped(),
+                    response.fillerFiltered());
         } catch (WebClientResponseException e) {
             throw new HippoDidException(e.getStatusCode().value(), e.getStatusText());
         }
@@ -194,4 +233,11 @@ public class SyncOperations {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record DownloadResponse(String content, String path, String contentHash) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record ImportDocumentResponse(
+            int totalParsed,
+            int memoriesAdded,
+            int duplicatesSkipped,
+            int fillerFiltered) {}
 }

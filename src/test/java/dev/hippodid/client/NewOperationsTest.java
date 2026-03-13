@@ -397,7 +397,29 @@ class NewOperationsTest {
 
         RecordedRequest request = mockServer.takeRequest();
         assertThat(request.getMethod()).isEqualTo("GET");
-        assertThat(request.getPath()).contains("/v1/characters/" + CHAR_ID + "/export");
+        assertThat(request.getPath()).contains("/v1/characters/" + CHAR_ID + "/sync/export");
+    }
+
+    // ─── Sync import document ─────────────────────────────────────────────────
+
+    @Test
+    void syncImportDocument_returnsResult() throws Exception {
+        mockServer.enqueue(new MockResponse()
+                .setBody("""
+                        {"totalParsed":5,"memoriesAdded":3,"duplicatesSkipped":1,"fillerFiltered":1}""")
+                .addHeader("Content-Type", "application/json"));
+
+        var result = client.characters(CHAR_ID).sync()
+                .importDocument("MEMORY.md", "# Export\n- fact one", "auto");
+
+        assertThat(result.totalParsed()).isEqualTo(5);
+        assertThat(result.memoriesAdded()).isEqualTo(3);
+        assertThat(result.duplicatesSkipped()).isEqualTo(1);
+        assertThat(result.fillerFiltered()).isEqualTo(1);
+
+        RecordedRequest request = mockServer.takeRequest();
+        assertThat(request.getMethod()).isEqualTo("POST");
+        assertThat(request.getPath()).isEqualTo("/v1/characters/" + CHAR_ID + "/sync/import");
     }
 
     // ─── Error handling ────────────────────────────────────────────────────────

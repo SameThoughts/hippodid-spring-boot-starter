@@ -189,8 +189,7 @@ public class CharacterHandle {
     public String exportAsString(ExportFormat format) {
         try {
             return webClient.get()
-                    .uri("/v1/characters/{id}/export?format={format}", characterId,
-                            format.name().toLowerCase())
+                    .uri("/v1/characters/{id}/sync/export", characterId)
                     .accept(org.springframework.http.MediaType.parseMediaType(format.mediaType()))
                     .retrieve()
                     .bodyToMono(String.class)
