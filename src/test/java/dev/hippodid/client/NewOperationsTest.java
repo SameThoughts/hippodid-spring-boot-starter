@@ -119,20 +119,17 @@ class NewOperationsTest {
     @Test
     void syncList_returnsFiles() throws Exception {
         String body = """
-                {
-                    "files": [
-                        {
-                            "id": "s1s1s1s1-0000-0000-0000-000000000001",
-                            "characterId": "c1c1c1c1-0000-0000-0000-000000000001",
-                            "path": "MEMORY.md",
-                            "contentHash": "abc123",
-                            "sizeBytes": 512,
-                            "label": null,
-                            "capturedAt": "2024-01-01T00:00:00Z"
-                        }
-                    ],
-                    "total": 1
-                }
+                [
+                    {
+                        "id": "s1s1s1s1-0000-0000-0000-000000000001",
+                        "characterId": "c1c1c1c1-0000-0000-0000-000000000001",
+                        "path": "MEMORY.md",
+                        "contentHash": "abc123",
+                        "sizeBytes": 512,
+                        "label": null,
+                        "capturedAt": "2024-01-01T00:00:00Z"
+                    }
+                ]
                 """;
         mockServer.enqueue(new MockResponse().setBody(body)
                 .addHeader("Content-Type", "application/json"));

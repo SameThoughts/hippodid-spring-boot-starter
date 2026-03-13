@@ -114,15 +114,15 @@ public class SyncOperations {
      */
     public List<SyncedFile> list() {
         try {
-            SyncListResponse response = webClient.get()
+            List<SyncResponse> responses = webClient.get()
                     .uri("/v1/characters/{id}/sync/files", characterId)
                     .retrieve()
-                    .bodyToMono(SyncListResponse.class)
+                    .bodyToMono(new org.springframework.core.ParameterizedTypeReference<List<SyncResponse>>() {})
                     .block();
-            if (response == null || response.files() == null) {
+            if (responses == null) {
                 return List.of();
             }
-            return response.files().stream()
+            return responses.stream()
                     .map(this::toSyncedFile)
                     .toList();
         } catch (WebClientResponseException e) {

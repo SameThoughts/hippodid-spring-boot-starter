@@ -52,7 +52,7 @@ public class ImportOperations {
     public ImportJob start(String fileName, String content, String format) {
         Map<String, Object> body = new HashMap<>();
         body.put("fileName", fileName);
-        body.put("content", content);
+        body.put("fileContent", content);
         body.put("format", format != null ? format : "auto");
         try {
             ImportJobResponse response = webClient.post()
