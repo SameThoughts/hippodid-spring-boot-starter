@@ -83,6 +83,12 @@ class NewOperationsTest {
         RecordedRequest request = mockServer.takeRequest();
         assertThat(request.getMethod()).isEqualTo("POST");
         assertThat(request.getPath()).isEqualTo("/v1/characters/" + CHAR_ID + "/sync");
+
+        String requestBody = request.getBody().readUtf8();
+        assertThat(requestBody).contains("\"filePath\"");
+        assertThat(requestBody).contains("\"fileContent\"");
+        assertThat(requestBody).doesNotContain("\"path\":");
+        assertThat(requestBody).doesNotContain("\"content\":");
     }
 
     // ─── Sync: download ────────────────────────────────────────────────────────
@@ -213,7 +219,9 @@ class NewOperationsTest {
         assertThat(recorded.getMethod()).isEqualTo("PUT");
         assertThat(recorded.getPath()).isEqualTo("/v1/ai-config");
         String requestBody = recorded.getBody().readUtf8();
-        assertThat(requestBody).contains("completionBaseUrl");
+        assertThat(requestBody).contains("\"completion\"");
+        assertThat(requestBody).contains("\"base_url\"");
+        assertThat(requestBody).contains("\"api_key\"");
         assertThat(requestBody).contains("gpt-4o");
     }
 
@@ -406,6 +414,73 @@ class NewOperationsTest {
         assertThatThrownBy(() -> client.characters(CHAR_ID).sync().upload("test.md", "content"))
                 .isInstanceOf(HippoDidException.class)
                 .satisfies(e -> assertThat(((HippoDidException) e).statusCode()).isEqualTo(403));
+    }
+
+    // ─── Character: updateAliases ──────────────────────────────────────────────
+
+    @Test
+    void updateAliases_sendsAliasEntryObjects() throws Exception {
+        String body = """
+                {
+                    "id": "c1c1c1c1-0000-0000-0000-000000000001",
+                    "name": "Agent",
+                    "visibility": "PRIVATE",
+                    "memoryCount": 0,
+                    "createdAt": "2024-01-01T00:00:00Z",
+                    "updatedAt": "2024-01-01T00:00:00Z"
+                }
+                """;
+        mockServer.enqueue(new MockResponse().setBody(body)
+                .addHeader("Content-Type", "application/json"));
+
+        client.characters().updateAliases(CHAR_ID, List.of("bot", "helper"));
+
+        RecordedRequest request = mockServer.takeRequest();
+        assertThat(request.getMethod()).isEqualTo("PUT");
+        assertThat(request.getPath()).isEqualTo("/v1/characters/" + CHAR_ID + "/aliases");
+
+        String requestBody = request.getBody().readUtf8();
+        assertThat(requestBody).contains("\"alias\"");
+        assertThat(requestBody).contains("\"bot\"");
+        assertThat(requestBody).contains("\"helper\"");
+    }
+
+    // ─── Character: archive ─────────────────────────────────────────────────────
+
+    @Test
+    void archive_sendsDeleteRequest() throws Exception {
+        mockServer.enqueue(new MockResponse().setResponseCode(200));
+
+        client.characters().archive(CHAR_ID);
+
+        RecordedRequest request = mockServer.takeRequest();
+        assertThat(request.getMethod()).isEqualTo("DELETE");
+        assertThat(request.getPath()).isEqualTo("/v1/characters/" + CHAR_ID);
+    }
+
+    // ─── Character: updateProfile ───────────────────────────────────────────────
+
+    @Test
+    void updateProfile_sendsPatchRequest() throws Exception {
+        String body = """
+                {
+                    "id": "c1c1c1c1-0000-0000-0000-000000000001",
+                    "name": "Agent",
+                    "visibility": "PRIVATE",
+                    "memoryCount": 0,
+                    "createdAt": "2024-01-01T00:00:00Z",
+                    "updatedAt": "2024-01-01T00:00:00Z"
+                }
+                """;
+        mockServer.enqueue(new MockResponse().setBody(body)
+                .addHeader("Content-Type", "application/json"));
+
+        client.characters().updateProfile(CHAR_ID, java.util.Map.of("personality", "Friendly"));
+
+        RecordedRequest request = mockServer.takeRequest();
+        assertThat(request.getMethod()).isEqualTo("PATCH");
+        assertThat(request.getPath()).isEqualTo("/v1/characters/" + CHAR_ID + "/profile");
+        assertThat(request.getBody().readUtf8()).contains("\"personality\"");
     }
 
     @Test

@@ -139,14 +139,24 @@ public class AiConfigOperations {
 
     private Map<String, Object> buildRequestBody(AiConfigRequest request) {
         Map<String, Object> body = new HashMap<>();
-        body.put("completionBaseUrl", request.completionBaseUrl());
-        body.put("completionApiKey", request.completionApiKey());
-        body.put("completionModel", request.completionModel());
-        request.completionTemperature().ifPresent(t -> body.put("completionTemperature", t));
-        request.completionMaxTokens().ifPresent(t -> body.put("completionMaxTokens", t));
-        request.embeddingBaseUrl().ifPresent(u -> body.put("embeddingBaseUrl", u));
-        request.embeddingApiKey().ifPresent(k -> body.put("embeddingApiKey", k));
-        request.embeddingModel().ifPresent(m -> body.put("embeddingModel", m));
+
+        Map<String, Object> completion = new HashMap<>();
+        completion.put("base_url", request.completionBaseUrl());
+        completion.put("api_key", request.completionApiKey());
+        completion.put("model", request.completionModel());
+        request.completionTemperature().ifPresent(t -> completion.put("temperature", t));
+        request.completionMaxTokens().ifPresent(t -> completion.put("max_tokens", t));
+        body.put("completion", completion);
+
+        if (request.embeddingBaseUrl().isPresent() || request.embeddingApiKey().isPresent()
+                || request.embeddingModel().isPresent()) {
+            Map<String, Object> embedding = new HashMap<>();
+            request.embeddingBaseUrl().ifPresent(u -> embedding.put("base_url", u));
+            request.embeddingApiKey().ifPresent(k -> embedding.put("api_key", k));
+            request.embeddingModel().ifPresent(m -> embedding.put("model", m));
+            body.put("embedding", embedding);
+        }
+
         return body;
     }
 

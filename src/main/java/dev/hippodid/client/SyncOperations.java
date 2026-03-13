@@ -65,9 +65,8 @@ public class SyncOperations {
      */
     public SyncedFile upload(String path, String content, String label) {
         Map<String, Object> body = new HashMap<>();
-        body.put("path", path);
-        body.put("content", content);
-        body.put("clientHash", "");
+        body.put("filePath", path);
+        body.put("fileContent", content);
         if (label != null && !label.isBlank()) {
             body.put("label", label);
         }
