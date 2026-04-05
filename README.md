@@ -26,7 +26,7 @@ Add the GitHub Packages repository and dependency to your `pom.xml`:
 <dependency>
     <groupId>dev.hippodid</groupId>
     <artifactId>hippodid-spring-boot-starter</artifactId>
-    <version>1.0.0</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 
@@ -53,7 +53,7 @@ repositories {
     }
 }
 
-implementation 'dev.hippodid:hippodid-spring-boot-starter:1.0.0'
+implementation 'dev.hippodid:hippodid-spring-boot-starter:1.2.0'
 ```
 
 ## Configuration
@@ -106,6 +106,10 @@ public class AgentMemoryService {
 CharacterInfo agent = hippodid.characters()
     .create("My Agent", "Personal AI assistant");
 
+// Create with specific memory mode
+CharacterInfo verbatimAgent = hippodid.characters()
+    .create("Verbatim Agent", "Stores memories as-is", MemoryMode.VERBATIM);
+
 // List all characters
 List<CharacterInfo> all = hippodid.characters().list();
 ```
@@ -130,7 +134,7 @@ List<MemoryResult> filtered = handle
     .memories();
 
 // Add memory — AI extraction (Starter+ tier)
-MemoryInfo mem = handle.memories().add("User prefers dark mode and vim keybindings");
+List<MemoryInfo> mems = handle.memories().add("User prefers dark mode and vim keybindings");
 
 // Add memory — direct write (Starter+ tier, no AI processing)
 MemoryInfo mem = handle.memories().addDirect(
@@ -141,6 +145,121 @@ MemoryInfo mem = handle.memories().addDirect(
 
 // Export all memories to a file
 Path file = handle.export(ExportFormat.MARKDOWN, Path.of("agent-memory.md"));
+
+// Set memory mode
+handle.setMemoryMode(MemoryMode.VERBATIM);
+```
+
+### `hippodid.characters(id).agentConfig()` — Per-character agent config
+
+```java
+// Get agent config
+AgentConfig config = hippodid.characters("id").agentConfig().get();
+config.systemPrompt();   // Optional<String>
+config.preferredModel();  // Optional<String>
+config.temperature();     // Optional<Double>
+
+// Set agent config
+hippodid.characters("id").agentConfig().set(Map.of(
+    "systemPrompt", "You are a helpful assistant",
+    "preferredModel", "gpt-4o",
+    "temperature", 0.7
+));
+
+// Delete agent config
+hippodid.characters("id").agentConfig().delete();
+```
+
+### `hippodid.characters(id).clone()` — Clone a character
+
+```java
+// Clone with all options
+CloneResult clone = hippodid.characters("source-id").clone("My Clone",
+    CloneOptions.builder()
+        .copyMemories(true)
+        .copyTags(true)
+        .agentConfigOverride(Map.of("temperature", 0.5))
+        .build());
+
+System.out.println("New ID: " + clone.characterId());
+System.out.println("Memories copied: " + clone.memoriesCopied());
+
+// Clone with defaults (tags copied, memories not)
+CloneResult simple = hippodid.characters("source-id").clone("Quick Clone",
+    CloneOptions.defaults());
+```
+
+### `hippodid.characters(id).assembleContext()` — Client-side context assembly
+
+Fetches profile, relevant memories, and agent config, then formats into a prompt:
+
+```java
+AssembledContext ctx = hippodid.characters("agent-id")
+    .assembleContext("user preferences",
+        ContextOptions.builder()
+            .strategy(AssemblyStrategy.CONVERSATIONAL)
+            .maxContextTokens(4096)
+            .recencyWeight(0.7)
+            .topK(15)
+            .build());
+
+String prompt = ctx.formattedPrompt();   // Ready-to-use prompt
+int tokens = ctx.tokenEstimate();         // Estimated token count
+String sysPrompt = ctx.systemPrompt();    // From agentConfig or generated
+List<MemoryResult> mems = ctx.memories(); // Retrieved memories
+```
+
+Available strategies: `DEFAULT`, `CONVERSATIONAL`, `TASK_FOCUSED`, `CONCIERGE`, `MATCHING`.
+
+### `hippodid.templates()` — Character templates (Sprint 15)
+
+```java
+// Create a template
+hippodid.templates().create("Employee", "Employee template",
+    List.of(Map.of("categoryName", "skills", "purpose", "Track skills")),
+    List.of(Map.of("sourceColumn", "name", "targetField", "name")));
+
+// List, get, update, delete
+hippodid.templates().list();
+hippodid.templates().get("template-id");
+hippodid.templates().update("template-id", "New Name", "New desc", null, null);
+hippodid.templates().delete("template-id");
+
+// Preview and clone
+hippodid.templates().preview("template-id", Map.of("name", "John", "role", "Engineer"));
+hippodid.templates().clone("template-id");
+```
+
+### `hippodid.batch()` — Batch character creation (Sprint 16)
+
+```java
+// Create characters from data rows
+Map<String, Object> job = hippodid.batch().create("template-id",
+    List.of(
+        Map.of("name", "Alice", "role", "Engineer"),
+        Map.of("name", "Bob", "role", "Designer")),
+    "name",    // externalIdColumn
+    "SKIP",    // onConflict: SKIP, UPDATE, ERROR
+    false);    // dryRun
+
+// Check job status (typed)
+BatchJob status = hippodid.jobs().status("job-id");
+System.out.println(status.status());        // PROCESSING
+System.out.println(status.processedRows()); // 42
+status.progress().ifPresent(p ->
+    System.out.println(p.percentage() + "% - " + p.message()));
+```
+
+### `hippodid.agentConfigTemplates()` — Reusable agent config presets (Sprint 17)
+
+```java
+// Create a preset
+hippodid.agentConfigTemplates().create("Friendly Bot", Map.of(
+    "systemPrompt", "You are friendly and helpful",
+    "temperature", 0.8));
+
+// List all presets
+hippodid.agentConfigTemplates().list();
 ```
 
 ### `hippodid.defaultCharacter()` — Use configured default character

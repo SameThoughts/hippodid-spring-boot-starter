@@ -213,6 +213,17 @@ public class HippoDidClient {
         return new AgentConfigTemplateOperations(webClient);
     }
 
+    /**
+     * Returns job status operations.
+     *
+     * <pre>{@code
+     * BatchJob job = hippodid.jobs().status("job-uuid");
+     * }</pre>
+     */
+    public JobOperations jobs() {
+        return new JobOperations(webClient);
+    }
+
     /** The base URL configured for this client. */
     public String baseUrl() {
         return properties.getBaseUrl();

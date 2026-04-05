@@ -90,6 +90,38 @@ public class TemplateOperations {
     }
 
     /**
+     * Updates an existing character template.
+     *
+     * @param templateId    the template ID
+     * @param name          new name (or null to keep current)
+     * @param description   new description (or null to keep current)
+     * @param categories    new categories (or null to keep current)
+     * @param fieldMappings new field mappings (or null to keep current)
+     * @return the updated template as a map
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> update(String templateId, String name, String description,
+                                       List<Map<String, Object>> categories,
+                                       List<Map<String, Object>> fieldMappings) {
+        Map<String, Object> body = new HashMap<>();
+        if (name != null) body.put("name", name);
+        if (description != null) body.put("description", description);
+        if (categories != null) body.put("categories", categories);
+        if (fieldMappings != null) body.put("fieldMappings", fieldMappings);
+        try {
+            return webClient.put()
+                    .uri("/v1/templates/characters/{id}", templateId)
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+        } catch (WebClientResponseException e) {
+            throw new HippoDidException(e.getStatusCode().value(), e.getStatusText(),
+                    extractMessage(e));
+        }
+    }
+
+    /**
      * Previews a character materialized from a template with sample data.
      */
     @SuppressWarnings("unchecked")

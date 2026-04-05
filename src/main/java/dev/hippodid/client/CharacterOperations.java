@@ -2,6 +2,7 @@ package dev.hippodid.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.hippodid.client.model.CharacterInfo;
+import dev.hippodid.client.model.MemoryMode;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
@@ -50,6 +51,40 @@ public class CharacterOperations {
         if (description != null) {
             body.put("description", description);
         }
+        try {
+            CharacterResponse response = webClient.post()
+                    .uri("/v1/characters")
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(CharacterResponse.class)
+                    .block();
+            return toCharacterInfo(response);
+        } catch (WebClientResponseException e) {
+            throw new HippoDidException(e.getStatusCode().value(), e.getStatusText());
+        }
+    }
+
+    /**
+     * Creates a new character with a specific memory mode.
+     *
+     * <p>Sends {@code memoryMode} in the create request. If the server does not
+     * yet accept this field, the character is created with the server's default
+     * mode (EXTRACTED). Use {@link CharacterHandle#setMemoryMode} after creation
+     * as a reliable alternative.
+     *
+     * @param name        character name (max 256 chars)
+     * @param description optional description (max 2000 chars, pass {@code null} to omit)
+     * @param memoryMode  the memory processing mode
+     * @return the created character
+     * @throws HippoDidException if creation fails
+     */
+    public CharacterInfo create(String name, String description, MemoryMode memoryMode) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("name", name);
+        if (description != null) {
+            body.put("description", description);
+        }
+        body.put("memoryMode", memoryMode.name());
         try {
             CharacterResponse response = webClient.post()
                     .uri("/v1/characters")
