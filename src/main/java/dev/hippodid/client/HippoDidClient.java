@@ -176,6 +176,43 @@ public class HippoDidClient {
         return new AiConfigOperations(webClient);
     }
 
+    /**
+     * Returns character template operations (CRUD, preview, clone).
+     *
+     * <pre>{@code
+     * hippodid.templates().create("My Template", "desc", categories, mappings);
+     * hippodid.templates().list();
+     * hippodid.templates().preview(templateId, sampleRow);
+     * }</pre>
+     */
+    public TemplateOperations templates() {
+        return new TemplateOperations(webClient);
+    }
+
+    /**
+     * Returns batch character creation operations.
+     *
+     * <pre>{@code
+     * hippodid.batch().create(templateId, rows, "id", "SKIP", false);
+     * hippodid.batch().getJobStatus(jobId);
+     * }</pre>
+     */
+    public BatchOperations batch() {
+        return new BatchOperations(webClient);
+    }
+
+    /**
+     * Returns agent config template operations (CRUD).
+     *
+     * <pre>{@code
+     * hippodid.agentConfigTemplates().create("My Preset", config);
+     * hippodid.agentConfigTemplates().list();
+     * }</pre>
+     */
+    public AgentConfigTemplateOperations agentConfigTemplates() {
+        return new AgentConfigTemplateOperations(webClient);
+    }
+
     /** The base URL configured for this client. */
     public String baseUrl() {
         return properties.getBaseUrl();

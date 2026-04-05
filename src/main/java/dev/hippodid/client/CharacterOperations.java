@@ -216,6 +216,150 @@ public class CharacterOperations {
         }
     }
 
+    /**
+     * Clones a character.
+     *
+     * @param characterId     the source character's UUID string
+     * @param name            name for the cloned character
+     * @param externalId      optional external ID
+     * @param copyTags        whether to copy tags (default true)
+     * @param copyMemories    whether to deep-copy memories (default false)
+     * @param agentConfigOverride optional agent config override map
+     * @return the clone result as a map
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> clone(String characterId, String name,
+                                      String externalId, Boolean copyTags,
+                                      Boolean copyMemories,
+                                      Map<String, Object> agentConfigOverride) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("name", name);
+        if (externalId != null) body.put("externalId", externalId);
+        if (copyTags != null) body.put("copyTags", copyTags);
+        if (copyMemories != null) body.put("copyMemories", copyMemories);
+        if (agentConfigOverride != null) body.put("agentConfigOverride", agentConfigOverride);
+        try {
+            return webClient.post()
+                    .uri("/v1/characters/{id}/clone", characterId)
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+        } catch (WebClientResponseException e) {
+            throw new HippoDidException(e.getStatusCode().value(), e.getStatusText());
+        }
+    }
+
+    /**
+     * Gets the agent config for a character.
+     *
+     * @param characterId the character's UUID string
+     * @return the agent config as a map
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getAgentConfig(String characterId) {
+        try {
+            return webClient.get()
+                    .uri("/v1/characters/{id}/agent-config", characterId)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+        } catch (WebClientResponseException e) {
+            throw new HippoDidException(e.getStatusCode().value(), e.getStatusText());
+        }
+    }
+
+    /**
+     * Sets or replaces agent config for a character.
+     *
+     * @param characterId the character's UUID string
+     * @param config      agent config map (systemPrompt, preferredModel, temperature, etc.)
+     * @return the saved agent config as a map
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> setAgentConfig(String characterId, Map<String, Object> config) {
+        try {
+            return webClient.put()
+                    .uri("/v1/characters/{id}/agent-config", characterId)
+                    .bodyValue(config)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+        } catch (WebClientResponseException e) {
+            throw new HippoDidException(e.getStatusCode().value(), e.getStatusText());
+        }
+    }
+
+    /**
+     * Removes agent config from a character.
+     *
+     * @param characterId the character's UUID string
+     */
+    public void deleteAgentConfig(String characterId) {
+        try {
+            webClient.delete()
+                    .uri("/v1/characters/{id}/agent-config", characterId)
+                    .retrieve()
+                    .bodyToMono(Void.class)
+                    .block();
+        } catch (WebClientResponseException e) {
+            throw new HippoDidException(e.getStatusCode().value(), e.getStatusText());
+        }
+    }
+
+    /**
+     * Updates a character (name, description, memoryMode).
+     *
+     * @param characterId the character's UUID string
+     * @param name        new name
+     * @param description optional description
+     * @param memoryMode  optional memory mode (EXTRACTED, VERBATIM, HYBRID)
+     * @return the updated character info
+     */
+    public CharacterInfo update(String characterId, String name, String description,
+                                 String memoryMode) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("name", name);
+        if (description != null) body.put("description", description);
+        if (memoryMode != null) body.put("memoryMode", memoryMode);
+        try {
+            CharacterResponse response = webClient.put()
+                    .uri("/v1/characters/{id}", characterId)
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(CharacterResponse.class)
+                    .block();
+            return toCharacterInfo(response);
+        } catch (WebClientResponseException e) {
+            throw new HippoDidException(e.getStatusCode().value(), e.getStatusText());
+        }
+    }
+
+    /**
+     * Asks a question using the character's memories (RAG chat).
+     *
+     * @param characterId    the character's UUID string
+     * @param question       the question to ask
+     * @param useAgentConfig whether to use the character's stored agent config
+     * @return the answer response as a map
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> ask(String characterId, String question, boolean useAgentConfig) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("question", question);
+        body.put("useAgentConfig", useAgentConfig);
+        try {
+            return webClient.post()
+                    .uri("/v1/characters/{id}/ask", characterId)
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+        } catch (WebClientResponseException e) {
+            throw new HippoDidException(e.getStatusCode().value(), e.getStatusText());
+        }
+    }
+
     private CharacterInfo toCharacterInfo(CharacterResponse r) {
         if (r == null) {
             return null;
