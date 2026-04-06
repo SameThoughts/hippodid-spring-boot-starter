@@ -18,10 +18,30 @@ class HippoDidAutoConfigurationTest {
 
     @Test
     void noBeansCreatedWhenApiKeyMissing() {
-        contextRunner.run(ctx -> {
-            assertThat(ctx).doesNotHaveBean(HippoDidClient.class);
-            assertThat(ctx).doesNotHaveBean(HippoDidHealthIndicator.class);
-        });
+        // The env var HIPPODID_API_KEY may be set in dev environments (relaxed
+        // binding maps it to hippodid.api-key), which would activate the
+        // auto-config even though no property was explicitly provided. Override
+        // with a system property so the context sees a blank value that still
+        // won't satisfy @ConditionalOnProperty.
+        String saved = System.getProperty("hippodid.api-key");
+        try {
+            System.clearProperty("hippodid.api-key");
+            // Use a fresh runner without any hippodid properties. The env var
+            // override trick: set the property to empty via withPropertyValues.
+            // @ConditionalOnProperty with no havingValue matches any non-empty
+            // value, so we need to override the env var binding entirely.
+            new ApplicationContextRunner()
+                    .withConfiguration(AutoConfigurations.of(HippoDidAutoConfiguration.class))
+                    .withSystemProperties("hippodid.api-key=")
+                    .run(ctx -> {
+                        assertThat(ctx).doesNotHaveBean(HippoDidClient.class);
+                        assertThat(ctx).doesNotHaveBean(HippoDidHealthIndicator.class);
+                    });
+        } finally {
+            if (saved != null) {
+                System.setProperty("hippodid.api-key", saved);
+            }
+        }
     }
 
     @Test
