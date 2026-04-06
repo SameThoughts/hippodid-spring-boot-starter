@@ -106,10 +106,6 @@ public class AgentMemoryService {
 CharacterInfo agent = hippodid.characters()
     .create("My Agent", "Personal AI assistant");
 
-// Create with specific memory mode
-CharacterInfo verbatimAgent = hippodid.characters()
-    .create("Verbatim Agent", "Stores memories as-is", MemoryMode.VERBATIM);
-
 // List all characters
 List<CharacterInfo> all = hippodid.characters().list();
 ```
@@ -146,7 +142,7 @@ MemoryInfo mem = handle.memories().addDirect(
 // Export all memories to a file
 Path file = handle.export(ExportFormat.MARKDOWN, Path.of("agent-memory.md"));
 
-// Set memory mode
+// Set memory mode (must be set after creation via update, not at create time)
 handle.setMemoryMode(MemoryMode.VERBATIM);
 ```
 
@@ -182,6 +178,7 @@ CloneResult clone = hippodid.characters("source-id").clone("My Clone",
         .build());
 
 System.out.println("New ID: " + clone.characterId());
+System.out.println("Name: " + clone.name());
 System.out.println("Memories copied: " + clone.memoriesCopied());
 
 // Clone with defaults (tags copied, memories not)
