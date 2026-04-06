@@ -257,9 +257,8 @@ public class CharacterHandle {
         // 1. Fetch character profile
         CharacterInfo profile = fetchProfile();
 
-        // 2. Search relevant memories
-        SearchResult searchResult = search(query,
-                SearchOptions.builder().topK(options.topK()).build());
+        // 2. Search relevant memories (with recencyWeight passed to the API)
+        SearchResult searchResult = searchWithRecency(query, options.topK(), options.recencyWeight());
         List<MemoryResult> memories = searchResult.memories();
 
         // 3. Fetch agent config (optional — may not exist)
@@ -273,8 +272,14 @@ public class CharacterHandle {
         // 5. Format the prompt based on strategy
         String formattedPrompt = formatPrompt(options.strategy(), systemPrompt, profile, memories, config);
 
-        // 6. Estimate tokens (~4 chars per token)
-        int tokenEstimate = Math.min(formattedPrompt.length() / 4, options.maxContextTokens());
+        // 6. Truncate if exceeding maxContextTokens (~4 chars per token)
+        int maxChars = options.maxContextTokens() * 4;
+        if (formattedPrompt.length() > maxChars) {
+            formattedPrompt = formattedPrompt.substring(0, maxChars);
+        }
+
+        // 7. Estimate tokens from the (possibly truncated) prompt
+        int tokenEstimate = formattedPrompt.length() / 4;
 
         return new AssembledContext(systemPrompt, profile, memories, config, formattedPrompt, tokenEstimate);
     }
@@ -339,6 +344,32 @@ public class CharacterHandle {
     }
 
     // ─── Private helpers ─────────────────────────────────────────────────────
+
+    private SearchResult searchWithRecency(String query, int topK, double recencyWeight) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("query", query);
+        body.put("topK", topK);
+        body.put("recencyWeight", recencyWeight);
+        try {
+            SearchResponse response = webClient.post()
+                    .uri("/v1/characters/{id}/memories/search", characterId)
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(SearchResponse.class)
+                    .block();
+            if (response == null) {
+                return new SearchResult(List.of(), 0);
+            }
+            List<MemoryResult> results = response.results().stream()
+                    .map(r -> new MemoryResult(
+                            r.memoryId(), r.content(), r.category(),
+                            r.relevanceScore(), r.salience(), r.decayWeight(), r.finalScore()))
+                    .toList();
+            return new SearchResult(results, results.size());
+        } catch (WebClientResponseException e) {
+            throw new HippoDidException(e.getStatusCode().value(), e.getStatusText());
+        }
+    }
 
     private CharacterInfo fetchProfile() {
         try {

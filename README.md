@@ -244,10 +244,10 @@ Map<String, Object> job = hippodid.batch().create("template-id",
 
 // Check job status (typed)
 BatchJob status = hippodid.jobs().status("job-id");
-System.out.println(status.status());        // PROCESSING
-System.out.println(status.processedRows()); // 42
+System.out.println(status.status());  // PROCESSING
 status.progress().ifPresent(p ->
-    System.out.println(p.percentage() + "% - " + p.message()));
+    System.out.println(p.processed() + "/" + p.total()
+        + " (" + p.succeeded() + " ok, " + p.failed() + " failed)"));
 ```
 
 ### `hippodid.agentConfigTemplates()` — Reusable agent config presets (Sprint 17)

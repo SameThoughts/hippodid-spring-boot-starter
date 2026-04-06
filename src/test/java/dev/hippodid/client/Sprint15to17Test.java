@@ -667,7 +667,56 @@ class Sprint15to17Test {
                 AssemblyStrategy.MATCHING);
     }
 
-    // ─── Helpers ────────���──────────────────────────────────────────────────────
+    // ─── Code review fix coverage ─────────────────────────────────────────────
+
+    @Test
+    void assembleContext_recencyWeightPassedToSearchRequest() throws Exception {
+        enqueueAssembleContextResponses();
+
+        client.characters(CHAR_ID).assembleContext("preferences",
+                ContextOptions.builder()
+                        .recencyWeight(0.8)
+                        .build());
+
+        // Skip profile request
+        mockServer.takeRequest();
+        // Verify search request includes recencyWeight
+        RecordedRequest searchReq = mockServer.takeRequest();
+        String searchBody = searchReq.getBody().readUtf8();
+        assertThat(searchBody).contains("\"recencyWeight\"");
+        assertThat(searchBody).contains("0.8");
+    }
+
+    @Test
+    void assembleContext_tokenEstimateReflectsTrueSize() throws Exception {
+        enqueueAssembleContextResponses();
+
+        AssembledContext ctx = client.characters(CHAR_ID).assembleContext("preferences",
+                ContextOptions.defaults());
+
+        // tokenEstimate should equal formattedPrompt.length() / 4 (not capped)
+        int expectedEstimate = ctx.formattedPrompt().length() / 4;
+        assertThat(ctx.tokenEstimate()).isEqualTo(expectedEstimate);
+    }
+
+    @Test
+    void assembleContext_truncatesPromptWhenExceedingMaxTokens() throws Exception {
+        // Use a very small maxContextTokens to force truncation
+        enqueueAssembleContextResponses();
+
+        AssembledContext ctx = client.characters(CHAR_ID).assembleContext("preferences",
+                ContextOptions.builder()
+                        .maxContextTokens(10) // 10 tokens = ~40 chars
+                        .build());
+
+        // formattedPrompt should be truncated to maxContextTokens * 4 chars
+        assertThat(ctx.formattedPrompt().length()).isLessThanOrEqualTo(10 * 4);
+        // tokenEstimate should match the truncated prompt
+        assertThat(ctx.tokenEstimate()).isLessThanOrEqualTo(10);
+        assertThat(ctx.tokenEstimate()).isEqualTo(ctx.formattedPrompt().length() / 4);
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private void enqueueAssembleContextResponses() {
         mockServer.enqueue(new MockResponse().setBody("""
